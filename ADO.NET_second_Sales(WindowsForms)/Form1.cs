@@ -19,6 +19,7 @@ namespace ADO.NET_second_Sales_WindowsForms_
         List<string> listAllTables;
         DataSet dataset;
         SqlDataAdapter adapter;
+
         public Form1()
         {
             InitializeComponent();
@@ -35,53 +36,47 @@ namespace ADO.NET_second_Sales_WindowsForms_
             conn.ConnectionString = strConnection;
             SqlCommand command = new SqlCommand("SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE LIKE '%TABLE%'", conn);
 
-            using (SqlConnection connection = new SqlConnection())
+            try
             {
+                conn.Open();
+                MessageBox.Show("Connection", "Start");
+                adapter = new SqlDataAdapter(command);
+                adapter.Fill(dataset);
 
-                try
+                foreach (DataTable dt in dataset.Tables)
                 {
-                    conn.Open();
-                    MessageBox.Show("Connection", "Start");
-                    adapter = new SqlDataAdapter(command);
-                    adapter.Fill(dataset);
-
-                    foreach (DataTable dt in dataset.Tables)
+                    foreach (DataRow row in dt.Rows)
                     {
-                        foreach (DataRow row in dt.Rows)
+                        var cells = row.ItemArray;
+                        for (int i = 0; i < cells.Length; i++)
                         {
-                            var cells = row.ItemArray;
-                            for (int i = 0; i < cells.Length; i++)
+                            if (i == 2)
                             {
-                                if(i == 2)
-                                {
-                                    listAllTables.Add(cells[i].ToString());
-                                    Console.WriteLine();
-                                }
+                                listAllTables.Add(cells[i].ToString());
+                                Console.WriteLine();
                             }
                         }
                     }
-
-                    comboBox1.Items.AddRange(listAllTables.ToArray());
                 }
+                comboBox1.Items.AddRange(listAllTables.ToArray());
+            }
+            catch (SqlException ex)
+            {
+                MessageBox.Show("Error", $"{ex.Message}");
+            }
 
-                catch (SqlException ex)
-                {
-                    MessageBox.Show("Error", $"{ex.Message}");
-                }
-
-                finally
-                {
-                    MessageBox.Show("Connection", "Close");
-                    conn.Close();
-                }
+            finally
+            {
+                MessageBox.Show("Connection", "Close");
+                conn.Close();
             }
         }
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
+            SqlDataReader rdr = null;
             try
             {
-                SqlDataReader rdr = null;
                 DataTable dataTable = new DataTable();
                 string table = comboBox1.SelectedItem.ToString();
                 string sqlQeury = $"select * from {table}";
@@ -89,6 +84,7 @@ namespace ADO.NET_second_Sales_WindowsForms_
                 SqlCommand cmd = new SqlCommand(sqlQeury, conn);
                 rdr = cmd.ExecuteReader();
                 int line = 0;
+
                 while (rdr.Read())
                 {
                     if (line == 0)
@@ -114,7 +110,10 @@ namespace ADO.NET_second_Sales_WindowsForms_
             }
             finally
             {
-                conn.Close();
+                if (conn != null)
+                    conn.Close();
+                if (rdr != null)
+                    rdr.Close();
             }
         }
     }
